@@ -1,0 +1,465 @@
+#2. Parking lot System (ARDUINO)
+
+/**************** 주차장 *********************/
+#include <Servo.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+#include <SoftwareSerial.h>
+
+LiquidCrystal_I2C lcd(0x3F, 16, 2);
+
+Servo Motor_Left_1st;
+Servo Motor_Left_2nd;
+Servo Motor_Left_3rd;
+
+Servo Motor_Right_1st;
+Servo Motor_Right_2nd;
+Servo Motor_Right_3rd; //서보모터
+
+const int echoPin_Left_1st = 22;
+const int trigPin_Left_1st = 23;
+
+const int echoPin_Left_2nd = 24;
+const int trigPin_Left_2nd = 25;
+
+const int echoPin_Left_3rd = 26;
+const int trigPin_Left_3rd = 27;
+
+const int echoPin_Right_1st = 28;
+const int trigPin_Right_1st = 29;
+
+const int echoPin_Right_2nd = 30;
+const int trigPin_Right_2nd = 31;
+
+const int echoPin_Right_3rd = 32;
+const int trigPin_Right_3rd = 33; //초음파
+
+int blueTx=19;
+int blueRx=18;
+SoftwareSerial BTSerial(blueTx, blueRx); //블루투스
+
+int red1 = 38; //13 12 11 10 9 8 // 38 39 40 41 42 43
+int red2 = 40;
+int red3 = 42;
+int red4 = 13;
+int red5 = 11;
+int red6 = 9;
+
+int grn1 = 39;
+int grn2 = 41;
+int grn3 = 43;
+int grn4 = 12;
+int grn5 = 10;
+int grn6 = 8;
+
+/********** emergency **********/
+int sw1=50;
+int buzzerPin=52; 
+
+int val_R1, val_R2, val_R3, val_L1, val_L2, val_L3; //LCD 표시용
+int val_sum, val;
+
+int A, B, C, D, E, F; //Bluetooth 표시용
+
+float duration_Left_1st , duration_Left_2nd, duration_Left_3rd ;
+float duration_Right_1st , duration_Right_2nd, duration_Right_3rd ;
+
+float distance_Left_1st , distance_Left_2nd, distance_Left_3rd ;
+float distance_Right_1st , distance_Right_2nd, distance_Right_3rd ;
+
+char BT[14]={0,};
+
+void setup() {
+
+  /*********************Pinmode_setup*****************************/
+  pinMode(echoPin_Left_1st, INPUT);
+  pinMode(echoPin_Left_2nd, INPUT);
+  pinMode(echoPin_Left_3rd, INPUT);
+  pinMode(echoPin_Right_1st, INPUT);
+  pinMode(echoPin_Right_2nd, INPUT);
+  pinMode(echoPin_Right_3rd, INPUT);
+  
+  pinMode(trigPin_Left_1st, OUTPUT);
+  pinMode(trigPin_Left_2nd, OUTPUT);
+  pinMode(trigPin_Left_3rd, OUTPUT);
+  pinMode(trigPin_Right_1st, OUTPUT);
+  pinMode(trigPin_Right_2nd, OUTPUT);
+  pinMode(trigPin_Right_3rd, OUTPUT);
+
+  /*********************LED_setup********************************/
+  pinMode(red1, OUTPUT);
+  pinMode(red2, OUTPUT);
+  pinMode(red3, OUTPUT);
+  pinMode(red4, OUTPUT);
+  pinMode(red5, OUTPUT);
+  pinMode(red6, OUTPUT);
+  
+  pinMode(grn1, OUTPUT);
+  pinMode(grn2, OUTPUT);
+  pinMode(grn3, OUTPUT);
+  pinMode(grn4, OUTPUT);
+  pinMode(grn5, OUTPUT);
+  pinMode(grn6, OUTPUT);
+
+/********************Tact Switch********************************/
+  pinMode(sw1,INPUT_PULLUP);
+  
+
+/*********************Servo_attech*****************************/
+  Motor_Left_1st.attach(2);
+  Motor_Left_2nd.attach(3);
+  Motor_Left_3rd.attach(4);
+  
+  Motor_Right_1st.attach(5);
+  Motor_Right_2nd.attach(6);
+  Motor_Right_3rd.attach(7);
+
+  lcd.init();
+  lcd.backlight();
+
+  Serial.begin(9600);
+  BTSerial.begin(9600);
+
+}
+
+
+void emergency() {
+  tone(buzzerPin, 242);
+  Motor_Left_1st.write(90);
+  Motor_Left_2nd.write(90);
+  Motor_Left_3rd.write(90);
+  Motor_Right_1st.write(90);
+  Motor_Right_2nd.write(90);
+  Motor_Right_3rd.write(90);
+  digitalWrite(red1,HIGH);
+  digitalWrite(red2,HIGH);
+  digitalWrite(red3,HIGH);
+  digitalWrite(red4,HIGH);
+  digitalWrite(red5,HIGH);
+  digitalWrite(red6,HIGH);
+  digitalWrite(grn1,LOW);
+  digitalWrite(grn2,LOW);
+  digitalWrite(grn3,LOW);
+  digitalWrite(grn4,LOW);
+  digitalWrite(grn5,LOW);
+  digitalWrite(grn6,LOW);
+  delay(500);
+  digitalWrite(red1,LOW);
+  digitalWrite(red2,LOW);
+  digitalWrite(red3,LOW);
+  digitalWrite(red4,LOW);
+  digitalWrite(red5,LOW);
+  digitalWrite(red6,LOW);
+  digitalWrite(grn1,HIGH);
+  digitalWrite(grn2,HIGH);
+  digitalWrite(grn3,HIGH);
+  digitalWrite(grn4,HIGH);
+  digitalWrite(grn5,HIGH);
+  digitalWrite(grn6,HIGH);
+  delay(500);
+}
+
+void Left_1st() {
+
+  digitalWrite(trigPin_Left_1st, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin_Left_1st, LOW);
+
+  duration_Left_1st = pulseIn(echoPin_Left_1st, HIGH);
+
+  distance_Left_1st = ((float)(340 * duration_Left_1st) / 10000)/2;
+
+  if ( distance_Left_1st <= 10 )
+  {
+    val_L1=1;
+    A=11;
+
+    digitalWrite(red1,HIGH);
+    digitalWrite(grn1,LOW);
+    
+    Motor_Left_1st.attach(2);
+    Motor_Left_1st.write(90);
+    delay(200);
+    Motor_Left_1st.detach();
+  }
+  else
+  {
+    val_L1=0;
+    A=10;
+
+    digitalWrite(red1,LOW);
+    digitalWrite(grn1,HIGH);
+    
+    Motor_Left_1st.attach(2);
+    Motor_Left_1st.write(0);
+    delay(200);
+    Motor_Left_1st.detach();
+  } 
+}
+
+
+void Left_2nd() {
+
+  digitalWrite(trigPin_Left_2nd, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin_Left_2nd, LOW);
+
+  duration_Left_2nd = pulseIn(echoPin_Left_2nd, HIGH);
+
+  distance_Left_2nd = ((float)(340 * duration_Left_2nd) / 10000)/2;
+
+  if ( distance_Left_2nd <= 10 )
+  {
+    val_L2=1;
+    B=21;
+
+    digitalWrite(red2,HIGH);
+    digitalWrite(grn2,LOW);
+
+    Motor_Left_2nd.attach(3);
+    Motor_Left_2nd.write(90);
+    delay(200);
+    Motor_Left_2nd.detach();
+  }
+  else
+  {
+    val_L2=0;
+    B=20;
+
+    digitalWrite(red2,LOW);
+    digitalWrite(grn2,HIGH);
+    
+    Motor_Left_2nd.attach(3);
+    Motor_Left_2nd.write(0);
+    delay(200);
+    Motor_Left_2nd.detach();
+  }  
+}
+
+void Left_3rd() {
+
+  digitalWrite(trigPin_Left_3rd, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin_Left_3rd, LOW);
+
+  duration_Left_3rd = pulseIn(echoPin_Left_3rd, HIGH);
+
+  distance_Left_3rd = ((float)(340 * duration_Left_3rd) / 10000)/2;
+
+  if ( distance_Left_3rd <= 10 )
+  {
+    val_L3=1;
+    C=31;
+
+    digitalWrite(red3,HIGH);
+    digitalWrite(grn3,LOW);
+    
+    Motor_Left_3rd.attach(4);
+    Motor_Left_3rd.write(90);
+    delay(200);
+    Motor_Left_3rd.detach();
+  }
+  else
+  {
+    val_L3=0;
+    C=30;
+
+    digitalWrite(red3,LOW);
+    digitalWrite(grn3,HIGH);
+    
+    Motor_Left_3rd.attach(4);
+    Motor_Left_3rd.write(180);
+    delay(200);
+    Motor_Left_3rd.detach();
+  }  
+}
+
+
+void Right_1st() {
+
+  digitalWrite(trigPin_Right_1st, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin_Right_1st, LOW);
+
+  duration_Right_1st = pulseIn(echoPin_Right_1st, HIGH);
+
+  distance_Right_1st = ((float)(340 * duration_Right_1st) / 10000)/2;
+
+  if ( distance_Right_1st <= 10 )
+  {
+    val_R1=1;
+    D=41;
+
+    digitalWrite(red6,HIGH);
+    digitalWrite(grn6,LOW);
+    
+    
+    Motor_Right_1st.attach(5);
+    Motor_Right_1st.write(90);
+    delay(200);
+    Motor_Right_1st.detach();
+  }
+  else
+  {
+    val_R1=0;
+    D=40;
+
+    digitalWrite(red6,LOW);
+    digitalWrite(grn6,HIGH);
+    
+    Motor_Right_1st.attach(5);
+    Motor_Right_1st.write(180);
+    delay(200);
+    Motor_Right_1st.detach();
+  }  
+}
+
+
+void Right_2nd() {
+
+  digitalWrite(trigPin_Right_2nd, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin_Right_2nd, LOW);
+
+  duration_Right_2nd = pulseIn(echoPin_Right_2nd, HIGH);
+
+  distance_Right_2nd = ((float)(340 * duration_Right_2nd) / 10000)/2;
+
+  if ( distance_Right_2nd <= 10 )
+  {
+    val_R2=1;
+    E=51;
+
+    digitalWrite(red5,HIGH);
+    digitalWrite(grn5,LOW);
+
+    Motor_Right_2nd.attach(6); //dont touch
+    Motor_Right_2nd.write(90);
+    delay(200);
+    Motor_Right_2nd.detach();
+  }
+  else
+  {   
+    val_R2=0;
+    E=50;
+
+    digitalWrite(red5,LOW);
+    digitalWrite(grn5,HIGH);
+
+
+    Motor_Right_2nd.attach(6);
+    Motor_Right_2nd.write(180);
+    delay(200);
+    Motor_Right_2nd.detach(); //dont touch
+  }  
+}
+
+void Right_3rd() {
+
+  digitalWrite(trigPin_Right_3rd, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin_Right_3rd, LOW);
+
+  duration_Right_3rd = pulseIn(echoPin_Right_3rd, HIGH);
+
+  distance_Right_3rd = ((float)(340 * duration_Right_3rd) / 10000)/2;
+
+  if ( distance_Right_3rd <= 10 )
+  {
+    val_R3=1;
+    F=61;
+
+    digitalWrite(red4,HIGH);
+    digitalWrite(grn4,LOW);
+    
+    Motor_Right_3rd.attach(7); //
+    Motor_Right_3rd.write(80);
+    delay(200);
+    Motor_Right_3rd.detach(); //
+  }
+  else
+  {
+    val_R3=0;
+    F=60;
+
+    digitalWrite(red4,LOW);
+    digitalWrite(grn4,HIGH);
+
+    Motor_Right_3rd.attach(7); //
+    Motor_Right_3rd.write(0);
+    delay(200);
+    Motor_Right_3rd.detach(); //
+  }  
+}
+
+void lot() {
+  val_sum=val_R1+val_R2+val_R3+val_L1+val_L2+val_L3;
+  val=6-val_sum;
+
+  lcd.backlight();
+  
+  if (val!=6&&val!=0)
+  {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Parking lot");
+    lcd.setCursor(0,1);
+    lcd.print("Available: ");
+    lcd.setCursor(11,1);
+    lcd.print(val);
+  }
+  else if (val==6)
+  {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Parking lot");
+    lcd.setCursor(0,1);
+    lcd.print("ALL Availvable");
+  }
+  else if (val==0)
+  {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Parking lot");
+    lcd.setCursor(0,1);
+    lcd.print("FULL");
+  }
+}
+
+void loop() {
+  if(digitalRead(sw1)==HIGH)
+  {
+    emergency();
+    BTSerial.print("9999999999999");
+  }
+
+  else {
+    noTone(buzzerPin);
+
+  Left_1st();
+  Left_2nd();
+  Left_3rd();
+  
+  Right_1st();
+  Right_2nd();
+  Right_3rd();
+  
+
+  lot();
+  sprintf(BT, "%d%d%d%d%d%d%d", A, B, C, D, E, F, val);
+  BTSerial.print(BT);
+  delay(100);
+
+  
+  Serial.print("R1: ");
+  Serial.println(distance_Right_1st);
+  Serial.print("R2: ");
+  Serial.println(distance_Right_2nd);
+  Serial.print("R3: ");
+  Serial.println(distance_Right_3rd);
+  Serial.println("");
+  }
+
+}
+
+
