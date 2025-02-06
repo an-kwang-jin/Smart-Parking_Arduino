@@ -1,2 +1,2 @@
 # Smart-Parking_Arduino
-Line Tracer &amp; Smart Parking IoT
+Smart Parking System IoT >> Line Tracer car & Smart Parking lot
